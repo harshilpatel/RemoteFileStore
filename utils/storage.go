@@ -9,7 +9,16 @@ import (
 // Storage keeps all local objects
 type Storage struct {
 	Root    string
-	Objects []FObject
+	Objects map[string]FObject
+	Config  ConfigCloudStore
+}
+
+func CreateStorage(c ConfigCloudStore) Storage {
+	return Storage{
+		Root:    c.LocalBasePath,
+		Objects: make(map[string]FObject),
+		Config:  c,
+	}
 }
 
 func (s *Storage) createObject(path string, info os.FileInfo) {
@@ -17,16 +26,17 @@ func (s *Storage) createObject(path string, info os.FileInfo) {
 	obj.Location = path
 	obj.Name = info.Name()
 	obj.TagSecure()
-	// obj.TagRemoveAll()
 
-	s.Objects = append(s.Objects, obj)
+	s.Objects[obj.Location] = obj
 }
 
 func (s *Storage) DisabllAllTags() {
 	TagWg.Add(len(s.Objects))
 	for _, obj := range s.Objects {
-		obj.TagRemoveAll()
+		go obj.TagRemoveAll()
 	}
+
+	TagWg.Wait()
 }
 
 func (s *Storage) walkRoot(path string, info os.FileInfo, err error) error {
@@ -38,11 +48,15 @@ func (s *Storage) walkRoot(path string, info os.FileInfo, err error) error {
 }
 
 func (s *Storage) CreateObjects() error {
+
 	if len(s.Root) == 0 {
 		return errors.New("No root string found")
 	}
 
-	filepath.Walk(s.Root, s.walkRoot)
+	if _, e := os.Stat(s.Root); os.IsNotExist(e) {
+		return errors.New("Root folder does not exists")
+	}
 
+	filepath.Walk(s.Root, s.walkRoot)
 	return nil
 }

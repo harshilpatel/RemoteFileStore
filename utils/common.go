@@ -4,10 +4,9 @@ import (
 	server "github.com/harshilkumar/cloud-store-server/utils"
 )
 
-type User struct {
-	server.User
-}
+const ServerVerifyUser = "Server.VerifyUser"
+const ServerSaveObject = "Server.SaveObject"
 
-type UserRequestPackage string{
-	server.UserRequestPackage
-}
+type User server.User
+
+type UserRequestPackage server.UserRequestPackage

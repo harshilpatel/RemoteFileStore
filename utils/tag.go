@@ -20,7 +20,7 @@ func (t *Tag) AddTagToFile(path string, color string) bool {
 	cmd := exec.Command("tag", "-a", color, path)
 	cmd.Run()
 
-	// TagWg.Done()
+	TagWg.Done()
 	return true
 }
 
@@ -29,7 +29,7 @@ func (t *Tag) DelTagToFile(path string, color string) bool {
 	cmd := exec.Command("tag", "-r", color, path)
 	cmd.Run()
 
-	// TagWg.Done()
+	TagWg.Done()
 	return true
 }
 
@@ -42,7 +42,7 @@ func (t *Tag) RemoveAll(path string) bool {
 	cmd = exec.Command("tag", "-r", "Orange", path)
 	cmd.Run()
 
-	// TagWg.Done()
+	TagWg.Done()
 	return true
 }
 
@@ -53,6 +53,6 @@ func (t *Tag) UpdateTagToFile(path string, color string) bool {
 	cmd := exec.Command("tag", "-a", color, path)
 	cmd.Run()
 
-	// TagWg.Done()
+	TagWg.Done()
 	return true
 }
