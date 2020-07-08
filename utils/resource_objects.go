@@ -12,8 +12,11 @@ type FObject struct {
 	IsDir    bool
 	IsBinary bool
 
-	Lastwritten time.Time
-	Lastpulled  time.Time
+	LastWritten time.Time
+	LastPulled  time.Time
+	LastPushed  time.Time
+
+	RequiresPushed bool
 
 	Version int16
 }
@@ -68,4 +71,25 @@ func (f *FObject) TagNotSecure() {
 func (f *FObject) TagWorking() {
 	t := Tag{}
 	t.UpdateTagToFile(f.Location, "Orange")
+}
+
+func (f *FObject) GetOrSetLastWritten() time.Time {
+	if f.LastWritten.IsZero() {
+		f.LastWritten = time.Now().UTC()
+	}
+
+	if f.LastPulled.IsZero() {
+		f.LastPulled = time.Now().UTC()
+	}
+
+	return f.LastWritten
+}
+
+func (f *FObject) GetOrSetLastPulled() time.Time {
+
+	if f.LastPulled.IsZero() {
+		f.LastPulled = time.Now().UTC()
+	}
+
+	return f.LastPulled
 }

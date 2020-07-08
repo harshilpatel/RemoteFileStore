@@ -7,11 +7,14 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	"github.com/harshilkumar/cloud-store-client/utils"
 	"github.com/spf13/viper"
 )
+
+var globalWatch sync.WaitGroup
 
 func watchForSignals() {
 	sigs := make(chan os.Signal, 1)
@@ -28,8 +31,7 @@ func watchForConfigChanges() {
 func main() {
 
 	configLocation := flag.String("config", "", "use for saving and reading config")
-	var reply int
-	log.Println("reply: %v", reply)
+	flag.Parse()
 
 	viper.SetConfigName("client_config.json")
 	viper.SetConfigType("json")

@@ -8,7 +8,6 @@ import (
 type Client struct {
 	Storage Storage
 	Client  *rpc.Client
-	User    User
 }
 
 func CreateClient(config ConfigCloudStore, storage Storage) Client {
@@ -20,9 +19,5 @@ func CreateClient(config ConfigCloudStore, storage Storage) Client {
 	return Client{
 		Storage: storage,
 		Client:  client,
-		User: User{
-			Username: config.User,
-			Key:      config.Key,
-		},
 	}
 }
