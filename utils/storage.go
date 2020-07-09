@@ -4,7 +4,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Storage keeps all local objects
@@ -16,36 +19,60 @@ type Storage struct {
 }
 
 func CreateStorage(c ConfigCloudStore) Storage {
+	logrus.Printf("Creating or reading local storage from %v", c.BasePath)
+	user := User{}
+	user.Username = c.User
+	user.Key = c.Key
+
 	return Storage{
 		Root:    c.LocalBasePath,
-		Objects: make(map[string]FObject),
 		Config:  c,
-		User: User{
-			Username: c.User,
-			Key:      c.Key,
-		},
+		Objects: make(map[string]FObject),
+		User:    user,
 	}
 }
 
 func (s *Storage) createObject(path string, info os.FileInfo) {
 	obj := FObject{}
-	obj.Location = path
-	obj.Name = info.Name()
-	obj.TagSecure()
+	relativePath := strings.TrimPrefix(path, s.Config.BasePath)
 
-	s.Objects[obj.Location] = obj
+	obj.Location = path
+	obj.Relativepath = relativePath
+	obj.Name = info.Name()
+	obj.LastWritten = info.ModTime()
+
+	obj.UpdateHashForObject(s.User, s.Config)
+	obj.UpdateHashForObjectBlocks(s.User, s.Config)
+
+	s.Objects[obj.Relativepath] = obj
+}
+
+func (s *Storage) SecureAllObjects() {
+	ch := make(chan int, len(s.Objects))
+	for _, obj := range s.Objects {
+		obj.TagSecure(ch)
+	}
+	for range make([]int, len(s.Objects)) {
+		<-ch
+	}
+
+	logrus.Printf("Finished tagging")
 }
 
 func (s *Storage) DisabllAllTags() {
-	TagWg.Add(len(s.Objects))
+	ch := make(chan int, len(s.Objects))
 	for _, obj := range s.Objects {
-		go obj.TagRemoveAll()
+		obj.TagRemoveAll(ch)
 	}
 
-	TagWg.Wait()
+	for range make([]int, len(s.Objects)) {
+		<-ch
+	}
+
 }
 
 func (s *Storage) walkRoot(path string, info os.FileInfo, err error) error {
+	// logrus.Printf("Found Object %v\n", path)
 	if !info.IsDir() {
 		s.createObject(path, info)
 	}
@@ -63,7 +90,10 @@ func (s *Storage) CreateObjects() error {
 		return errors.New("Root folder does not exists")
 	}
 
-	filepath.Walk(s.Root, s.walkRoot)
+	filepath.Walk(s.Config.LocalBasePath, s.walkRoot)
+
+	logrus.Println("All Objects Acknowledges and Marked")
+
 	return nil
 }
 
@@ -72,15 +102,12 @@ func (s *Storage) keepWatchingForChanges() {
 	for {
 		time.Sleep(60 * time.Second)
 
-		// now := time.Now().UTC()
-
 		for _, v := range s.Objects {
 			lastWritten := v.GetOrSetLastWritten()
 			if started.After(lastWritten) {
-				v.RequiresPushed = true
+				v.RequiresPush = true
 			}
-
-			if v.LastPushed.After()
+			// TODO
 		}
 
 	}

@@ -1,25 +1,34 @@
 package utils
 
 import (
+	server "github.com/harshilkumar/cloud-store-server/utils"
 	"github.com/spf13/viper"
 )
 
 type ConfigCloudStore struct {
-	User          string
-	Key           string
-	LocalDbPath   string
-	LocalBasePath string
-	RemotePath    string
-	RemoteDbPath  string
+	server.ConfigCloudStore
+
+	User             string
+	Key              string
+	ClientInstanceId string
+	LocalDbPath      string
+	LocalBasePath    string
+	RemotePath       string
+	RemoteDbPath     string
 }
 
 func GetorCreateConfig() ConfigCloudStore {
-	return ConfigCloudStore{
-		User:          viper.GetString("User"),
-		Key:           viper.GetString("Key"),
-		LocalBasePath: "/Users/harshilpatel/Projects/cloud-store-test/files/",
-		LocalDbPath:   "",
-		RemoteDbPath:  "",
-		RemotePath:    "localhost:1234",
+	c := ConfigCloudStore{
+		User:             viper.GetString("client.Storage.User.Username"),
+		Key:              viper.GetString("client.Storage.User.Key"),
+		ClientInstanceId: viper.GetString("client.Storage.Config.ClientInstanceId"),
+		LocalDbPath:      "",
+		LocalBasePath:    viper.GetString("client.Storage.Config.BasePath"),
+		RemoteDbPath:     "",
+		RemotePath:       viper.GetString("client.Storage.Config.RemotePath"),
 	}
+	c.BasePath = viper.GetString("client.Storage.Config.BasePath")
+
+	// c.ConfigCloudStore.BasePath = c.BasePath
+	return c
 }
