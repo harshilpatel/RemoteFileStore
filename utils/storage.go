@@ -5,7 +5,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/spf13/viper"
 
 	"github.com/sirupsen/logrus"
 )
@@ -16,6 +19,8 @@ type Storage struct {
 	Objects map[string]FObject
 	Config  ConfigCloudStore
 	User    User
+
+	mux sync.Mutex
 }
 
 func CreateStorage(c ConfigCloudStore) Storage {
@@ -32,19 +37,45 @@ func CreateStorage(c ConfigCloudStore) Storage {
 	}
 }
 
+func (s *Storage) UpdateObjectForUser(obj FObject) {
+	s.mux.Lock()
+
+	s.Objects[obj.Relativepath] = obj
+
+	s.mux.Unlock()
+}
+
+func (s *Storage) GetObjects() map[string]FObject {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	return s.Objects
+}
+
+func (s *Storage) GetObject(relativepath string) FObject {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	return s.Objects[relativepath]
+}
+
 func (s *Storage) createObject(path string, info os.FileInfo) {
-	obj := FObject{}
 	relativePath := strings.TrimPrefix(path, s.Config.BasePath)
 
+	obj := FObject{}
+	obj.Name = info.Name()
 	obj.Location = path
 	obj.Relativepath = relativePath
-	obj.Name = info.Name()
-	obj.LastWritten = info.ModTime()
+	obj.LastWritten = info.ModTime().UTC()
+	obj.LastPushed = info.ModTime().UTC()
+	obj.LastPulled = info.ModTime().UTC()
+	obj.Size = info.Size()
+	obj.Version = 0
 
 	obj.UpdateHashForObject(s.User, s.Config)
 	obj.UpdateHashForObjectBlocks(s.User, s.Config)
 
-	s.Objects[obj.Relativepath] = obj
+	s.UpdateObjectForUser(obj)
 }
 
 func (s *Storage) SecureAllObjects() {
@@ -91,10 +122,44 @@ func (s *Storage) CreateObjects() error {
 	}
 
 	filepath.Walk(s.Config.LocalBasePath, s.walkRoot)
+	s.parseConfigForObjects()
 
 	logrus.Println("All Objects Acknowledges and Marked")
 
 	return nil
+}
+
+func (s *Storage) parseConfigForObjects() {
+	configUserMap := viper.GetStringMap("client.storage")
+	if configUserMap["objects"] != nil {
+		configUserObjectsMap := configUserMap["objects"].(map[string]interface{})
+
+		for configFileRelativePath, configObj := range configUserObjectsMap {
+			configObjMap := configObj.(map[string]interface{})
+
+			lastWritten := configObjMap["lastwritten"].(string)
+			lastPushed := configObjMap["lastpushed"].(string)
+			lastPulled := configObjMap["lastpulled"].(string)
+			version := configObjMap["version"].(float64)
+
+			if userObject, ok := s.Objects[configFileRelativePath]; ok {
+				if LastPulled, err := time.Parse(time.RFC3339Nano, lastPulled); err == nil {
+					userObject.LastPulled = LastPulled
+				}
+				if LastWritten, err := time.Parse(time.RFC3339Nano, lastWritten); err == nil {
+					userObject.LastWritten = LastWritten
+				}
+				if LastPushed, err := time.Parse(time.RFC3339Nano, lastPushed); err == nil {
+					userObject.LastPushed = LastPushed
+				}
+
+				userObject.Version = int64(version)
+				s.UpdateObjectForUser(userObject)
+			}
+
+		}
+
+	}
 }
 
 func (s *Storage) keepWatchingForChanges() {

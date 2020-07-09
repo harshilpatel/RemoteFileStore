@@ -71,6 +71,8 @@ func main() {
 	// storage.SecureAllObjects()
 	fmt.Printf("Created fobjects %v \n", len(storage.Objects))
 	client.VerifyObjects()
+	client.HeartBeat()
+	client.InitiateWatchers()
 
 	watchForConfigChanges()
 
@@ -79,6 +81,9 @@ func main() {
 
 	logrus.Printf("Safe for shutdown signals")
 	<-sigs
+
+	client.Watcher.Close()
+	client.Watcher = nil
 
 	viper.Set("client", client)
 	viper.WriteConfig()
