@@ -1,6 +1,0 @@
-{
-	"ImportPath": "github.com/harshilkumar/cloud-store-client",
-	"GoVersion": "go1.14",
-	"GodepVersion": "v80",
-	"Deps": []
-}

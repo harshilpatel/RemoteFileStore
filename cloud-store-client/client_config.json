@@ -1,0 +1,30 @@
+{
+  "client": {
+    "Storage": {
+      "Root": ".",
+      "Objects": {},
+      "Config": {
+        "ServerDbPath": "",
+        "BasePath": ".",
+        "User": "harshilkumar",
+        "Key": "19f5226f-55ca-468e-9a43-f5f4bcbf8af4",
+        "ClientInstanceId": "87618122-28df-41ed-b31f-4a52229d671e",
+        "LocalDbPath": "",
+        "LocalBasePath": ".",
+        "RemotePath": "localhost:4533",
+        "RemoteDbPath": ""
+      },
+      "User": {
+        "Username": "harshilkumar",
+        "Key": "9e977eeb-a0b2-43c3-ac0b-bc6087a9de3a",
+        "BaseFilePath": "",
+        "ConfigPath": "",
+        "Objects": null,
+        "ClientInstances": null
+      }
+    },
+    "Client": {},
+    "ClientAvailable": false,
+    "Watcher": null
+  }
+}
